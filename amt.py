@@ -51,7 +51,7 @@ class AMTPower(base.PowerInterface):
     Does stuff.
     """
     
-    def validate(self, task, node):
+    def validate(self, task):
         """Check that the node's 'driver_info' is valid.
 
         Check that the node's 'driver_info' contains the requisite fields
@@ -63,12 +63,12 @@ class AMTPower(base.PowerInterface):
             incorrect or if ssh failed to connect to the node.
         """
         try:
-            _run_amt(node, 'info')
+            _run_amt(task.node, 'info')
         except AMTCommandFailed as e:
             raise exception.InvalidParameterValue(_("AMT connection cannot"
                                                     " be established: %s") % e)
 
-    def get_power_state(self, task, node):
+    def get_power_state(self, task):
         """Get the current power state.
 
         Poll the host for the current power state of the node.
@@ -82,13 +82,13 @@ class AMTPower(base.PowerInterface):
         :raises: NodeNotFound.
         :raises: AMTCommandFailed on an error from AMT.
         """
-        if 'Powerstate:   S0' in _run_amt(node, 'info'):
+        if 'Powerstate:   S0' in _run_amt(task.node, 'info'):
             return states.POWER_ON
         else:
             return states.POWER_OFF
 
     @task_manager.require_exclusive_lock
-    def set_power_state(self, task, node, pstate):
+    def set_power_state(self, task, pstate):
         """Turn the power on or off.
 
         Set the power state of a node.
@@ -111,13 +111,13 @@ class AMTPower(base.PowerInterface):
         else:
             raise exception.InvalidParameterValue(_("set_power_state called "
                     "with invalid power state %s.") % pstate)
-        result = _run_amt(node, cmd)
+        result = _run_amt(task.node, cmd)
 
         if not 'pt_status: success' in result:
             raise exception.PowerStateFailure(pstate=pstate)
 
     @task_manager.require_exclusive_lock
-    def reboot(self, task, node):
+    def reboot(self, task):
         """Cycles the power to a node.
 
         Power cycles a node.
@@ -131,10 +131,10 @@ class AMTPower(base.PowerInterface):
         :raises: PowerStateFailure if it failed to set power state to POWER_ON.
         :raises: AMTCommandFailed on an error from AMT.
         """
-        result = _run_amt(node, 'powercycle')
+        result = _run_amt(task.node, 'powercycle')
 
         if not 'pt_status: success' in result:
-            return self.set_power_state(task, node, states.POWER_ON)
+            return self.set_power_state(task, task.node, states.POWER_ON)
 
     def get_properties(self):
         return {'amt_address': 'IP address of AMT endpoint. Required.',
