@@ -27,17 +27,21 @@ CONF = cfg.CONF
 
 LOG = logging.getLogger(__name__)
 
+REQUIRED_PROPERTIES = {'amt_address': 'IP address of AMT endpoint. Required.',
+                       'amt_password': 'AMT password. Required.'}
+
 class AMTCommandFailed(Exception):
     pass
 
 def _run_amt(node, cmd):
-    info = node.get('driver_info', {})
+    info = node.driver_info or {}
+    missing_info = [key for key in REQUIRED_PROPERTIES if not info.get(key)]
+    if missing_info:
+        raise exception.MissingParameterValue(_("AMTPowerDriver requires the following to be set: %s.")
+            % missing_info)
+
     password = info.get('amt_password')
-    if not password:
-        raise exception.InvalidParameterValue('No amt_password given')
     host = info.get('amt_address')
-    if not host:
-        raise exception.InvalidParameterValue('No amt_address given')
     process = subprocess.Popen(['amttool', host, cmd], env={'AMT_PASSWORD': password}, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     out, err = process.communicate("y\n")
     if err:
@@ -137,8 +141,7 @@ class AMTPower(base.PowerInterface):
             return self.set_power_state(task, task.node, states.POWER_ON)
 
     def get_properties(self):
-        return {'amt_address': 'IP address of AMT endpoint. Required.',
-                'amt_password': 'AMT password. Required.'}
+        return REQUIRED_PROPERTIES
 
 class PXEAndAMTDriver(base.BaseDriver):
     def __init__(self):
