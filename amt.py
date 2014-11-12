@@ -30,6 +30,14 @@ LOG = logging.getLogger(__name__)
 REQUIRED_PROPERTIES = {'amt_address': 'IP address of AMT endpoint. Required.',
                        'amt_password': 'AMT password. Required.'}
 
+_BOOT_DEVICES_MAP = {
+    boot_devices.DISK: 'hd',
+    boot_devices.PXE: 'pxe',
+    boot_devices.CDROM: 'cd',
+    boot_devices.SAFE: 'hdsafe'
+}
+DEFAULT_BOOT_DEVICE = boot_devices.DISK
+
 class AMTCommandFailed(Exception):
     pass
 
@@ -143,8 +151,89 @@ class AMTPower(base.PowerInterface):
     def get_properties(self):
         return REQUIRED_PROPERTIES
 
+class AMTManagement(base.ManagementInterface):
+    def get_properties(self):
+        return {}
+
+    def validate(self, task):
+        pass
+
+    def get_supported_boot_devices(self):
+        """Get a list of the supported boot devices.
+
+        :returns: A list with the supported boot devices defined
+                  in :mod:`ironic.common.boot_devices`.
+
+        """
+        return list(_BOOT_DEVICES_MAP.keys())
+
+    @task_manager.require_exclusive_lock
+    def set_boot_device(self, task, device, persistent=False):
+        """Set the boot device for the task's node.
+
+        Set the boot device to use on next reboot of the node.
+
+        :param task: a task from TaskManager.
+        :param device: the boot device, one of
+                       :mod:`ironic.common.boot_devices`.
+        :param persistent: Boolean value. True if the boot device will
+                           persist to all future boots, False if not.
+                           Default: False. Ignored by this driver.
+        :raises: InvalidParameterValue if an invalid boot device is
+                 specified or if any connection parameters are incorrect.
+        :raises: MissingParameterValue if a required parameter is missing
+        :raises: AMTCommandFailed on an error from ssh.
+        :raises: NotImplementedError if the virt_type does not support
+            setting the boot device.
+
+        """
+        if device not in self.get_supported_boot_devices():
+             raise exception.InvalidParameterValue(_(
+                "Invalid boot device %s specified.") % device)
+
+        task.node.driver_info['amt_boot_device'] = device
+        task.node.save()
+
+    def get_boot_device(self, task):
+        """Get the current boot device for the task's node.
+
+        Provides the current boot device of the node. Be aware that not
+        all drivers support this.
+
+        :param task: a task from TaskManager.
+        :raises: InvalidParameterValue if any connection parameters are
+            incorrect.
+        :raises: MissingParameterValue if a required parameter is missing
+        :raises: AMTCommandFailed on an error from ssh.
+        :returns: a dictionary containing:
+
+            :boot_device: the boot device, one of
+                :mod:`ironic.common.boot_devices` or None if it is unknown.
+            :persistent: Whether the boot device will persist to all
+                future boots or not, None if it is unknown.
+
+        """
+        info = task.node.driver_info or {}
+        if 'amt_boot_device' in info:
+            boot_device = info['amt_boot_device']
+        else:
+            boot_device = DEFAULT_BOOT_DEVICE
+        response = {'boot_device': boot_device, 'persistent': True}
+        return response
+
+    def get_sensors_data(self, task):
+        """Get sensors data.
+
+        Not implemented by this driver.
+
+        :param task: a TaskManager instance.
+
+        """
+        raise NotImplementedError()
+
 class PXEAndAMTDriver(base.BaseDriver):
     def __init__(self):
         self.power = AMTPower()
+        self.management = AMTManagement()
         self.deploy = pxe.PXEDeploy()
         self.vendor = pxe.VendorPassthru()
