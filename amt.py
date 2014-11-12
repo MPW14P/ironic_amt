@@ -117,8 +117,10 @@ class AMTPower(base.PowerInterface):
         :raises: PowerStateFailure if it failed to set power state to pstate.
         :raises: AMTCommandFailed on an error from AMT.
         """
+        LOG.info('Setting power state.')
+        LOG.info('Selected boot device: ' % _BOOT_DEVICES_MAP[_get_boot_device(task.node)])
         if pstate == states.POWER_ON:
-            cmd = 'powerup'
+            cmd = 'powerup ' + _BOOT_DEVICES_MAP[_get_boot_device(task.node)]
         elif pstate == states.POWER_OFF:
             cmd = 'powerdown'
         else:
@@ -144,7 +146,7 @@ class AMTPower(base.PowerInterface):
         :raises: PowerStateFailure if it failed to set power state to POWER_ON.
         :raises: AMTCommandFailed on an error from AMT.
         """
-        result = _run_amt(task.node, 'powercycle')
+        result = _run_amt(task.node, 'powercycle ' + _BOOT_DEVICES_MAP[_get_boot_device(task.node)])
 
         if not 'pt_status: success' in result:
             return self.set_power_state(task, task.node, states.POWER_ON)
