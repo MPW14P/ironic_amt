@@ -149,7 +149,7 @@ class AMTPower(base.PowerInterface):
         result = _run_amt(task.node, 'powercycle ' + _BOOT_DEVICES_MAP[_get_boot_device(task.node)])
 
         if not 'pt_status: success' in result:
-            return self.set_power_state(task, task.node, states.POWER_ON)
+            return self.set_power_state(task, states.POWER_ON)
 
     def get_properties(self):
         return REQUIRED_PROPERTIES
