@@ -136,6 +136,10 @@ class AMTPower(base.PowerInterface):
         if not 'pt_status: success' in result:
             return self.set_power_state(task, node, states.POWER_ON)
 
+    def get_properties(self):
+        return {'amt_address': 'IP address of AMT endpoint. Required.',
+                'amt_password': 'AMT password. Required.'}
+
 class PXEAndAMTDriver(base.BaseDriver):
     def __init__(self):
         self.power = AMTPower()
