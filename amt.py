@@ -160,6 +160,7 @@ def _get_boot_device(node):
         boot_device = info['amt_boot_device']
     else:
         boot_device = DEFAULT_BOOT_DEVICE
+    return boot_device
 
 class AMTManagement(base.ManagementInterface):
     def get_properties(self):
