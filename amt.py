@@ -152,6 +152,13 @@ class AMTPower(base.PowerInterface):
     def get_properties(self):
         return REQUIRED_PROPERTIES
 
+def _get_boot_device(node):
+    info = node.driver_info or {}
+    if 'amt_boot_device' in info:
+        boot_device = info['amt_boot_device']
+    else:
+        boot_device = DEFAULT_BOOT_DEVICE
+
 class AMTManagement(base.ManagementInterface):
     def get_properties(self):
         return {}
@@ -192,7 +199,10 @@ class AMTManagement(base.ManagementInterface):
              raise exception.InvalidParameterValue(_(
                 "Invalid boot device %s specified.") % device)
 
-        task.node.driver_info['amt_boot_device'] = device
+        # Seperate variable needed to mark model data as modified....
+        info = task.node.driver_info
+        info['amt_boot_device'] = device
+        task.node.driver_info = info
         task.node.save()
 
     def get_boot_device(self, task):
@@ -214,12 +224,8 @@ class AMTManagement(base.ManagementInterface):
                 future boots or not, None if it is unknown.
 
         """
-        info = task.node.driver_info or {}
-        if 'amt_boot_device' in info:
-            boot_device = info['amt_boot_device']
-        else:
-            boot_device = DEFAULT_BOOT_DEVICE
-        response = {'boot_device': boot_device, 'persistent': True}
+        
+        response = {'boot_device': _get_boot_device(task.node), 'persistent': True}
         return response
 
     def get_sensors_data(self, task):
