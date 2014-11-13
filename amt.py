@@ -118,7 +118,7 @@ class AMTPower(base.PowerInterface):
         :raises: AMTCommandFailed on an error from AMT.
         """
         LOG.info('Setting power state.')
-        LOG.info('Selected boot device: ' % _BOOT_DEVICES_MAP[_get_boot_device(task.node)])
+        LOG.info('Selected boot device: %s' % _BOOT_DEVICES_MAP[_get_boot_device(task.node)])
         if pstate == states.POWER_ON:
             cmd = 'powerup ' + _BOOT_DEVICES_MAP[_get_boot_device(task.node)]
         elif pstate == states.POWER_OFF:
