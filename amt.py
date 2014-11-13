@@ -51,7 +51,7 @@ def _run_amt(node, cmd):
 
     password = info.get('amt_password')
     host = info.get('amt_address')
-    command = ['amttool', host, cmd]
+    command = ['amttool', host] + cmd.split(' ')
     LOG.debug('Running AMT command: %s' % ' '.join(command))
     process = subprocess.Popen(command, env={'AMT_PASSWORD': password}, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     out, err = process.communicate("y\n")
