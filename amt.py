@@ -51,8 +51,12 @@ def _run_amt(node, cmd):
 
     password = info.get('amt_password')
     host = info.get('amt_address')
-    process = subprocess.Popen(['amttool', host, cmd], env={'AMT_PASSWORD': password}, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    command = ['amttool', host, cmd]
+    LOG.debug('Running AMT command: %s' % ' '.join(command))
+    process = subprocess.Popen(command, env={'AMT_PASSWORD': password}, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     out, err = process.communicate("y\n")
+    LOG.debug('AMT stdout: %s' % str(out))
+    LOG.debug('AMT stderr: %s' % str(err))
     if err:
         raise AMTCommandFailed('AMT command %s on %s failed: %s' % (cmd, host, err))
     return out
